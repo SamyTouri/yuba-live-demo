@@ -22,4 +22,4 @@ Aucune appli à installer pour les équipes. **Un vocal suffit.**
 
 ---
 
-*Démonstration conçue par [Codevo](mailto:samy@codevo.be) pour Yuba Group — juin 2026.*
+*Démonstration conçue par Samy Touri — [Simplifiez.ai](https://simplifiez.ai) — pour Yuba Group, juin 2026.*

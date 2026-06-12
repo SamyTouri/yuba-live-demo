@@ -75,23 +75,9 @@ body {
   gap: 16px;
 }
 
-.logo { display: flex; align-items: baseline; gap: 8px; user-select: none; }
+.logo { display: flex; align-items: center; user-select: none; }
 
-.logo-yuba {
-  font-weight: 300;
-  font-size: 1.65rem;
-  letter-spacing: 0.04em;
-  color: #fff;
-}
-
-.logo-agency {
-  font-family: "Permanent Marker", cursive;
-  font-size: 0.95rem;
-  color: var(--yellow);
-  transform: rotate(-3deg) translateY(-2px);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
+.logo img { height: 46px; width: auto; display: block; }
 
 .live-wrap { display: flex; align-items: center; gap: 12px; }
 
@@ -741,7 +727,7 @@ body {
 @media (max-width: 720px) {
   .container { padding: 0 14px 30px; }
   .topbar-inner { padding: 10px 14px; }
-  .logo-yuba { font-size: 1.4rem; }
+  .logo img { height: 40px; }
   .updated { display: none; }
 
   .segmented { display: none; }

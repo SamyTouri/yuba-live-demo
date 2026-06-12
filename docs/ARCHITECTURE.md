@@ -6,7 +6,7 @@
 ## La chaîne, en 8 étapes
 
 ```
- Jobiste                  n8n (ia.codevo.be)                       Supabase              Client Yuba
+ Jobiste                  n8n (Simplifiez.ai)                      Supabase              Client Yuba
  ───────                  ──────────────────                       ────────              ───────────
  1. Vocal WhatsApp  ──▶  2. Webhook (WhatsApp Trigger)
                          3. Téléchargement de l'audio       ──▶   Storage + audit
@@ -17,7 +17,7 @@
 ```
 
 1. **Le jobiste envoie un vocal** sur le numéro WhatsApp Business dédié de Yuba, depuis son propre téléphone — c'est son numéro qui l'identifie. Rien à installer.
-2. **Réception dans n8n** via le node natif WhatsApp Trigger (webhook Meta), sur l'instance n8n existante de Codevo.
+2. **Réception dans n8n** via le node natif WhatsApp Trigger (webhook Meta), sur l'instance n8n existante de Simplifiez.ai.
 3. **L'audio est téléchargé** (Graph API) et archivé dans Supabase Storage. Idempotence garantie par l'identifiant unique du message (les doublons de webhook sont ignorés).
 4. **Transcription** par `gpt-4o-transcribe` (`language=fr`), avec un lexique métier injecté en prompt (« Yokler, screenbike, chalk-tag, don de sang… ») — robuste au bruit de rue et aux accents.
 5. **Extraction structurée** par un LLM léger contraint par un JSON Schema strict : flyers, conversations, personnes transportées, lieu, remarques. Règle d'or : *null si non mentionné, jamais inventé*. Le jobiste et la campagne ne sont **pas** devinés par l'IA : le jobiste est résolu par son numéro de téléphone, la campagne par son affectation du jour.
@@ -68,4 +68,4 @@ clients ─┬─ campaigns ─┬─ campaign_assignments ─ field_agents (té
 
 ---
 
-*Codevo — samy@codevo.be — juin 2026*
+*Samy Touri — [Simplifiez.ai](https://simplifiez.ai) — juin 2026*
