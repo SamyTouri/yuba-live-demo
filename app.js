@@ -324,9 +324,15 @@
     });
   }
 
-  function nowIndex() {
-    const d = simNow();
-    return d.getHours() - 8 + (d.getMinutes() + d.getSeconds() / 60) / 60;
+  /* le trait « maintenant » se pose EXACTEMENT sur le dernier point tracé */
+  function lastPointIndex(series) {
+    for (let i = series.length - 1; i >= 0; i--) if (series[i] != null) return i;
+    return null;
+  }
+
+  function pointRadii(series) {
+    const last = lastPointIndex(series);
+    return series.map((_, i) => (i === last ? 3.5 : 0));
   }
 
   const nowLinePlugin = {
@@ -398,19 +404,20 @@
     Chart.defaults.borderColor = "rgba(255,255,255,0.06)";
 
     const hourLabels = Array.from({ length: 12 }, (_, i) => `${8 + i}h`);
+    const hs = hourlySeries();
 
     charts.hourly = new Chart(document.getElementById("hourlyChart"), {
       type: "line",
       data: {
         labels: hourLabels,
         datasets: [{
-          data: hourlySeries(),
+          data: hs,
           borderColor: "#ffde55",
           backgroundColor: "rgba(255,222,85,0.10)",
           fill: true,
           tension: 0.35,
           borderWidth: 2,
-          pointRadius: 0,
+          pointRadius: pointRadii(hs),
           pointHoverRadius: 4,
           pointBackgroundColor: "#ffde55",
           spanGaps: false
@@ -424,7 +431,7 @@
         plugins: {
           legend: { display: false },
           tooltip: { displayColors: false, callbacks: { label: (c) => `${fmt(c.parsed.y)} ${current.activity.tooltipLabel}` } },
-          nowLine: { x: nowIndex() }
+          nowLine: { x: lastPointIndex(hs) }
         },
         scales: {
           x: { grid: { display: false } },
@@ -485,8 +492,10 @@
 
   function updateChartsLive() {
     if (!charts.hourly) return;
-    charts.hourly.data.datasets[0].data = hourlySeries();
-    charts.hourly.options.plugins.nowLine.x = nowIndex();
+    const hs = hourlySeries();
+    charts.hourly.data.datasets[0].data = hs;
+    charts.hourly.data.datasets[0].pointRadius = pointRadii(hs);
+    charts.hourly.options.plugins.nowLine.x = lastPointIndex(hs);
     charts.hourly.update();
     charts.daily.data.datasets[0].data = dailySeries();
     charts.daily.update("none");
@@ -494,8 +503,10 @@
 
   function updateChartsCampaign() {
     if (!charts.hourly) return;
-    charts.hourly.data.datasets[0].data = hourlySeries();
-    charts.hourly.options.plugins.nowLine.x = nowIndex();
+    const hs = hourlySeries();
+    charts.hourly.data.datasets[0].data = hs;
+    charts.hourly.data.datasets[0].pointRadius = pointRadii(hs);
+    charts.hourly.options.plugins.nowLine.x = lastPointIndex(hs);
     charts.hourly.update();
     charts.donut.data.labels = current.repartition.labels;
     charts.donut.data.datasets[0].data = current.repartition.values;
@@ -676,18 +687,21 @@
       const team = current.teams.find((tm) => tm.id === msg.teamId);
       if (team && markers[team.id]) markers[team.id].setPopupContent(popupHtml(team));
     }
-    // dépliage IA après 1,2 s + application des chiffres aux compteurs
+    // les chiffres du vocal impactent les compteurs DANS le même battement
+    // (plafond : les bumps cumulés ne dépassent pas 50 % de l'objectif du jour,
+    // pour qu'une page laissée ouverte des heures ne parte pas en vrille)
+    if (msg.chips) {
+      Object.entries(msg.chips).forEach(([k, v]) => {
+        const kp = current.kpis.find((x) => x.id === k);
+        if (kp) bumps[k] = Math.min(kp.today * 0.5, (bumps[k] || 0) + v);
+      });
+    }
+    // le dépliage IA, lui, reste purement visuel (0,9 s après l'arrivée)
     const cam = current;
     setTimeout(() => {
       if (current !== cam) return; // campagne changée entre-temps
       item.classList.add("unfolded");
-      if (msg.chips) {
-        Object.entries(msg.chips).forEach(([k, v]) => {
-          if (current.kpis.some((kp) => kp.id === k)) bumps[k] = (bumps[k] || 0) + v;
-        });
-        refreshKpis();
-      }
-    }, REDUCED ? 0 : (Date.now() - bootTime < SHOW_MS ? 900 : 1200));
+    }, REDUCED ? 0 : 900);
   }
 
   function highlightTeamFeed(teamId) {
@@ -744,15 +758,6 @@
     });
   }
 
-  /* délai interpolé : rapide jusqu'à rampStart, croisière après rampEnd */
-  function rampDelay(fastMin, fastMax, slowMin, slowMax, rampStart, rampEnd) {
-    const elapsed = Date.now() - bootTime;
-    const t = elapsed <= rampStart ? 0 : elapsed >= rampEnd ? 1 : (elapsed - rampStart) / (rampEnd - rampStart);
-    const min = fastMin + (slowMin - fastMin) * t;
-    const max = fastMax + (slowMax - fastMax) * t;
-    return min + Math.random() * (max - min);
-  }
-
   function jiggleDonut() {
     if (!charts.donut) return;
     if (!donutBase) donutBase = [...current.repartition.values];
@@ -768,46 +773,36 @@
     }
   }
 
-  function scheduleTick() {
-    const inShow = Date.now() - bootTime < SHOW_MS;
-    const delay = inShow ? 2800 + Math.random() * 500 : rampDelay(3000, 4500, 4000, 9000, SHOW_MS, 180000);
-    timers.push(setTimeout(() => {
-      if (Date.now() - bootTime < SHOW_MS) {
-        // minute de show : TOUT bouge à chaque tick
-        refreshKpis();
-        updateChartsLive();
-        driftMarker();
-        jiggleDonut();
-        touchUpdated();
-      } else {
-        restoreDonut();
-        const r = Math.random();
-        if (r < 0.55) refreshKpis();
-        else if (r < 0.75) { updateChartsLive(); touchUpdated(); }
-        else if (r < 0.9) driftMarker();
-        /* sinon : silence — le rythme organique */
-      }
-      scheduleTick();
-    }, delay));
+  /* ---------- battement unique ----------
+     UNE seule horloge visible : à chaque battement, un vocal arrive ET
+     l'ensemble des données bouge en même temps (compteurs, graphes, donut,
+     carte, story, progression). Cadence : 3 s pendant la minute de show,
+     5 s la deuxième minute, 7 s en croisière. */
+
+  function beatDelay() {
+    if (!firstFeedDone) return 1500;                 // premier battement quasi immédiat
+    const elapsed = Date.now() - bootTime;
+    if (elapsed < SHOW_MS) return 3000;              // minute 1 : toutes les 3 s
+    if (elapsed < SHOW_MS * 2) return 5000;          // minute 2 : toutes les 5 s
+    return 7000;                                     // ensuite : toutes les 7 s
   }
 
-  function feedDelay() {
-    if (!firstFeedDone) return 1200 + Math.random() * 800;          // 1er vocal : ~1-2 s
-    if (Date.now() - bootTime < SHOW_MS) return 2800 + Math.random() * 600; // show : un vocal / ~3 s
-    return rampDelay(8000, 12000, 25000, 45000, SHOW_MS, 240000);   // puis décélération progressive
-  }
-
-  function scheduleFeed() {
+  function scheduleBeat() {
     timers.push(setTimeout(() => {
-      pushFeedItem();
-      scheduleFeed();
-    }, feedDelay()));
+      const inShow = Date.now() - bootTime < SHOW_MS;
+      pushFeedItem();      // applique aussi les chiffres du vocal aux compteurs
+      refreshKpis();
+      updateChartsLive();
+      driftMarker();
+      if (inShow) jiggleDonut(); else restoreDonut();
+      touchUpdated();
+      scheduleBeat();
+    }, beatDelay()));
   }
 
   function startEngine() {
     stopEngine();
-    scheduleTick();
-    scheduleFeed();
+    scheduleBeat();
     timers.push(setInterval(tickUpdatedLabel, 1000));
   }
 
