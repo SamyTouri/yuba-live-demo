@@ -129,6 +129,8 @@
   let bumpsStore = {};         // bumps conservés par campagne (pas de recul au switch)
   let displayed = {};          // dernière valeur affichée par KPI
   let lastUpdate = Date.now();
+  let bootTime = Date.now();   // départ du « rythme d'ouverture » (page vivante immédiatement)
+  let firstFeedDone = false;   // le tout premier vocal arrive en quelques secondes
   let feedIndex = 0;
   let lastVoiceByTeam = {};
   let markers = {};
@@ -628,13 +630,16 @@
       if (msg.teamId && msg.type === "voice") lastVoiceByTeam[msg.teamId] = timeFmt.format(time);
     }
     feedIndex = (feedIndex + count) % pool.length;
-    // plus récent en haut
-    items.reverse().forEach(({ msg, time }) => {
-      els.feed.appendChild(buildFeedItem(msg, time, { unfolded: true }));
+    // plus récent en haut, entrée en cascade (la page bouge dès l'ouverture)
+    items.reverse().forEach(({ msg, time }, i) => {
+      const item = buildFeedItem(msg, time, { unfolded: true });
+      if (!REDUCED) item.style.animation = `feedIn 0.45s ${(i * 0.09).toFixed(2)}s both`;
+      els.feed.appendChild(item);
     });
   }
 
   function pushFeedItem() {
+    firstFeedDone = true;
     const pool = current.feedPool;
     const msg = pool[feedIndex % pool.length];
     feedIndex = (feedIndex + 1) % pool.length;
@@ -700,10 +705,20 @@
     els.updatedAgo.textContent = s < 4 ? "mis à jour à l’instant" : `mis à jour il y a ${s} s`;
   }
 
-  /* ---------- moteur de ticks ---------- */
+  /* ---------- moteur de ticks ----------
+     Rythme d'ouverture : pendant ~2 min après le chargement (ou un retour
+     sur l'onglet, ou un changement de campagne), tout est accéléré pour que
+     la page soit visiblement vivante. Ensuite, croisière plus calme pour ne
+     pas faire dériver les compteurs si la page reste ouverte longtemps. */
+
+  function wakeRhythm() {
+    bootTime = Date.now();
+    firstFeedDone = false;
+  }
 
   function scheduleTick() {
-    const delay = 4000 + Math.random() * 5000;
+    const warm = Date.now() - bootTime < 90000;
+    const delay = warm ? 2500 + Math.random() * 2500 : 4000 + Math.random() * 5000;
     timers.push(setTimeout(() => {
       const r = Math.random();
       if (r < 0.55) refreshKpis();
@@ -714,12 +729,17 @@
     }, delay));
   }
 
+  function feedDelay() {
+    if (!firstFeedDone) return 3500 + Math.random() * 2500;            // 1er vocal : 3,5-6 s
+    if (Date.now() - bootTime < 120000) return 9000 + Math.random() * 8000; // 2 premières min : 9-17 s
+    return 25000 + Math.random() * 25000;                              // croisière : 25-50 s
+  }
+
   function scheduleFeed() {
-    const delay = 25000 + Math.random() * 25000;
     timers.push(setTimeout(() => {
       pushFeedItem();
       scheduleFeed();
-    }, delay));
+    }, feedDelay()));
   }
 
   function startEngine() {
@@ -774,6 +794,8 @@
     renderMarkers();
     seedFeed();
     touchUpdated();
+    wakeRhythm();
+    startEngine(); // re-planifie ticks + feed sur le rythme d'ouverture
   }
 
   /* ---------- visibilité ---------- */
@@ -784,6 +806,7 @@
     else {
       refreshKpis();
       updateChartsLive();
+      wakeRhythm(); // retour sur l'onglet : la page repart en rythme d'ouverture
       startEngine();
     }
   });
