@@ -706,33 +706,49 @@
   }
 
   /* ---------- moteur de ticks ----------
-     Rythme d'ouverture : pendant ~2 min après le chargement (ou un retour
-     sur l'onglet, ou un changement de campagne), tout est accéléré pour que
-     la page soit visiblement vivante. Ensuite, croisière plus calme pour ne
-     pas faire dériver les compteurs si la page reste ouverte longtemps. */
+     Rythme d'ouverture « démo » : la conviction se joue dans la première
+     minute → activité exagérément dense pendant 60 s (vocal toutes les
+     4-8 s, compteurs quasi permanents), puis décélération PROGRESSIVE
+     jusqu'au rythme de croisière (~4 min), pour que les chiffres ne
+     dérivent pas si la page reste ouverte longtemps. Le rythme repart
+     à chaque ouverture, retour d'onglet ou changement de campagne. */
 
   function wakeRhythm() {
     bootTime = Date.now();
     firstFeedDone = false;
   }
 
+  /* délai interpolé : rapide jusqu'à rampStart, croisière après rampEnd */
+  function rampDelay(fastMin, fastMax, slowMin, slowMax, rampStart, rampEnd) {
+    const elapsed = Date.now() - bootTime;
+    const t = elapsed <= rampStart ? 0 : elapsed >= rampEnd ? 1 : (elapsed - rampStart) / (rampEnd - rampStart);
+    const min = fastMin + (slowMin - fastMin) * t;
+    const max = fastMax + (slowMax - fastMax) * t;
+    return min + Math.random() * (max - min);
+  }
+
   function scheduleTick() {
-    const warm = Date.now() - bootTime < 90000;
-    const delay = warm ? 2500 + Math.random() * 2500 : 4000 + Math.random() * 5000;
+    const delay = rampDelay(1500, 3000, 4000, 9000, 60000, 180000);
     timers.push(setTimeout(() => {
       const r = Math.random();
-      if (r < 0.55) refreshKpis();
-      else if (r < 0.75) { updateChartsLive(); touchUpdated(); }
-      else if (r < 0.9) driftMarker();
-      /* sinon : silence — le rythme organique */
+      if (Date.now() - bootTime < 60000) {
+        // première minute : jamais de silence, priorité aux compteurs
+        if (r < 0.6) refreshKpis();
+        else if (r < 0.82) { updateChartsLive(); touchUpdated(); }
+        else driftMarker();
+      } else {
+        if (r < 0.55) refreshKpis();
+        else if (r < 0.75) { updateChartsLive(); touchUpdated(); }
+        else if (r < 0.9) driftMarker();
+        /* sinon : silence — le rythme organique */
+      }
       scheduleTick();
     }, delay));
   }
 
   function feedDelay() {
-    if (!firstFeedDone) return 3500 + Math.random() * 2500;            // 1er vocal : 3,5-6 s
-    if (Date.now() - bootTime < 120000) return 9000 + Math.random() * 8000; // 2 premières min : 9-17 s
-    return 25000 + Math.random() * 25000;                              // croisière : 25-50 s
+    if (!firstFeedDone) return 1800 + Math.random() * 1200;        // 1er vocal : ~2-3 s
+    return rampDelay(4000, 8000, 25000, 45000, 60000, 240000);     // 4-8 s la 1re minute, puis ralentit
   }
 
   function scheduleFeed() {
