@@ -131,6 +131,9 @@
   let lastUpdate = Date.now();
   let bootTime = Date.now();   // départ du « rythme d'ouverture » (page vivante immédiatement)
   let firstFeedDone = false;   // le tout premier vocal arrive en quelques secondes
+  const SHOW_MS = 60000;       // 1 minute de show : tout bouge toutes les ~3 s
+  let showDeficit0 = {};       // par KPI : retard initial, rattrapé linéairement pendant le show
+  let donutBase = null;        // valeurs réelles du donut (restaurées après le show)
   let feedIndex = 0;
   let lastVoiceByTeam = {};
   let markers = {};
@@ -147,11 +150,28 @@
     return Math.round(raw * f) / f;
   }
 
+  /* pendant le show : la valeur affichée part plus bas et rattrape
+     linéairement la vraie valeur en 60 s → tout monte, vite et visiblement */
+  function currentDeficit(id) {
+    const d0 = showDeficit0[id] || 0;
+    if (!d0) return 0;
+    const t = (Date.now() - bootTime) / SHOW_MS;
+    if (t >= 1) return 0;
+    return d0 * (1 - t);
+  }
+
+  function shownValue(kpi) {
+    const f = Math.pow(10, kpi.decimals);
+    return Math.round((kpiValue(kpi) - currentDeficit(kpi.id)) * f) / f;
+  }
+
   function animateValue(el, from, to, decimals, duration) {
-    if (REDUCED || duration === 0) { el.textContent = fmt(to, decimals); return; }
-    const start = performance.now();
+    // onglet masqué : rAF ne tourne pas → on écrit la valeur finale directement
+    if (REDUCED || duration === 0 || document.hidden) { el.textContent = fmt(to, decimals); return; }
+    let start = null; // base de temps = celle des timestamps rAF (jamais performance.now())
     function step(now) {
-      const t = Math.min(1, (now - start) / duration);
+      if (start === null) start = now;
+      const t = Math.max(0, Math.min(1, (now - start) / duration));
       const e = 1 - Math.pow(1 - t, 3);
       el.textContent = fmt(from + (to - from) * e, decimals);
       if (t < 1) requestAnimationFrame(step);
@@ -191,7 +211,7 @@
     const story = current.meta.story;
     if (!story) { els.bStory.hidden = true; els.bStory.innerHTML = ""; return; }
     const kpi = current.kpis.find((k) => k.id === story.kpi);
-    const n = Math.round((displayed[story.kpi] != null ? displayed[story.kpi] : kpiValue(kpi)) * story.mult);
+    const n = Math.round((displayed[story.kpi] != null ? displayed[story.kpi] : shownValue(kpi)) * story.mult);
     els.bStory.innerHTML = `≈ <strong>${fmt(n)}</strong> ${story.label}<span class="story-note"> — ${story.note}</span>`;
     els.bStory.hidden = false;
   }
@@ -202,7 +222,7 @@
     els.kpiGrid.innerHTML = "";
     displayed = {};
     current.kpis.forEach((kpi) => {
-      const v = kpiValue(kpi);
+      const v = shownValue(kpi);
       const card = document.createElement("div");
       card.className = "kpi";
       card.dataset.kpi = kpi.id;
@@ -223,7 +243,7 @@
   function refreshKpis(animate = true) {
     let changed = false;
     current.kpis.forEach((kpi) => {
-      const v = kpiValue(kpi);
+      const v = shownValue(kpi);
       const prev = displayed[kpi.id];
       if (v > prev) {
         const card = els.kpiGrid.querySelector(`[data-kpi="${kpi.id}"]`);
@@ -667,7 +687,7 @@
         });
         refreshKpis();
       }
-    }, REDUCED ? 0 : 1200);
+    }, REDUCED ? 0 : (Date.now() - bootTime < SHOW_MS ? 900 : 1200));
   }
 
   function highlightTeamFeed(teamId) {
@@ -716,6 +736,12 @@
   function wakeRhythm() {
     bootTime = Date.now();
     firstFeedDone = false;
+    // les compteurs partent ~20 % plus bas et rattrapent en 60 s
+    showDeficit0 = {};
+    current.kpis.forEach((k) => {
+      const v = kpiValue(k);
+      showDeficit0[k.id] = Math.max(k.decimals > 0 ? 1 : 3, v * 0.2);
+    });
   }
 
   /* délai interpolé : rapide jusqu'à rampStart, croisière après rampEnd */
@@ -727,16 +753,35 @@
     return min + Math.random() * (max - min);
   }
 
+  function jiggleDonut() {
+    if (!charts.donut) return;
+    if (!donutBase) donutBase = [...current.repartition.values];
+    charts.donut.data.datasets[0].data = donutBase.map((v) => Math.max(2, Math.round(v + (Math.random() * 3 - 1.5))));
+    charts.donut.update();
+  }
+
+  function restoreDonut() {
+    if (charts.donut && donutBase) {
+      charts.donut.data.datasets[0].data = [...donutBase];
+      charts.donut.update();
+      donutBase = null;
+    }
+  }
+
   function scheduleTick() {
-    const delay = rampDelay(1500, 3000, 4000, 9000, 60000, 180000);
+    const inShow = Date.now() - bootTime < SHOW_MS;
+    const delay = inShow ? 2800 + Math.random() * 500 : rampDelay(3000, 4500, 4000, 9000, SHOW_MS, 180000);
     timers.push(setTimeout(() => {
-      const r = Math.random();
-      if (Date.now() - bootTime < 60000) {
-        // première minute : jamais de silence, priorité aux compteurs
-        if (r < 0.6) refreshKpis();
-        else if (r < 0.82) { updateChartsLive(); touchUpdated(); }
-        else driftMarker();
+      if (Date.now() - bootTime < SHOW_MS) {
+        // minute de show : TOUT bouge à chaque tick
+        refreshKpis();
+        updateChartsLive();
+        driftMarker();
+        jiggleDonut();
+        touchUpdated();
       } else {
+        restoreDonut();
+        const r = Math.random();
         if (r < 0.55) refreshKpis();
         else if (r < 0.75) { updateChartsLive(); touchUpdated(); }
         else if (r < 0.9) driftMarker();
@@ -747,8 +792,9 @@
   }
 
   function feedDelay() {
-    if (!firstFeedDone) return 1800 + Math.random() * 1200;        // 1er vocal : ~2-3 s
-    return rampDelay(4000, 8000, 25000, 45000, 60000, 240000);     // 4-8 s la 1re minute, puis ralentit
+    if (!firstFeedDone) return 1200 + Math.random() * 800;          // 1er vocal : ~1-2 s
+    if (Date.now() - bootTime < SHOW_MS) return 2800 + Math.random() * 600; // show : un vocal / ~3 s
+    return rampDelay(8000, 12000, 25000, 45000, SHOW_MS, 240000);   // puis décélération progressive
   }
 
   function scheduleFeed() {
@@ -803,15 +849,16 @@
     current = DATA.campaigns[id];
     rng = mulberry32(hashStr(dayKey + id));
     bumps = bumpsStore[id] = bumpsStore[id] || {};
+    donutBase = null; // le donut de la nouvelle campagne devient la référence
     markActive(id);
+    wakeRhythm(); // AVANT le rendu : les compteurs partent plus bas
     renderBanner();
     renderKpis();
     updateChartsCampaign();
     renderMarkers();
     seedFeed();
     touchUpdated();
-    wakeRhythm();
-    startEngine(); // re-planifie ticks + feed sur le rythme d'ouverture
+    startEngine(); // re-planifie ticks + feed sur le rythme de show
   }
 
   /* ---------- visibilité ---------- */
@@ -820,9 +867,9 @@
     if (!current) return;
     if (document.hidden) stopEngine();
     else {
-      refreshKpis();
+      wakeRhythm();  // retour sur l'onglet : le show repart
+      renderKpis();  // re-rendu complet (les compteurs repartent plus bas)
       updateChartsLive();
-      wakeRhythm(); // retour sur l'onglet : la page repart en rythme d'ouverture
       startEngine();
     }
   });
@@ -836,6 +883,7 @@
     rng = mulberry32(hashStr(dayKey + current.id));
     bumps = bumpsStore[current.id] = {};
     markActive(current.id);
+    wakeRhythm(); // les compteurs partent plus bas et rattrapent pendant le show
     renderBanner();
     renderKpis();
     initCharts();

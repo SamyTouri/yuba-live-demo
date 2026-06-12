@@ -68,7 +68,15 @@ const YUBA_DATA = {
         { agent: "Lina",    teamId: "cr1", type: "voice", duration: "0:17", chips: { transported: 1, km: 2.1 }, place: "Namur centre" },
         { agent: "Lina",    teamId: "cr1", type: "photo", photoLabel: "Vélo-taxi Yokler place d’Armes" },
         { agent: "Théo",    teamId: "cr1", type: "voice", duration: "0:20", chips: { transported: 2, km: 3.2 }, place: "Namur centre" },
-        { agent: "Camille", teamId: "cr4", type: "voice", duration: "0:24", chips: { flyers: 130, conversations: 11 }, place: "Namur centre" }
+        { agent: "Camille", teamId: "cr4", type: "voice", duration: "0:24", chips: { flyers: 130, conversations: 11 }, place: "Namur centre" },
+        { agent: "Noa",     teamId: "cr4", type: "voice", duration: "0:18", chips: { flyers: 95, conversations: 7 }, place: "Piétonnier Namur" },
+        { agent: "Aïcha",   teamId: "cr3", type: "voice", duration: "0:21", chips: { transported: 2, km: 3.9 }, place: "Flagey", quote: "Deux collègues infirmières, motivées à bloc !" },
+        { agent: "Jules",   teamId: "cr5", type: "voice", duration: "0:25", chips: { flyers: 125, conversations: 10 }, place: "Grand-Place de Bruxelles" },
+        { agent: "Maxence", teamId: "cr2", type: "voice", duration: "0:16", chips: { transported: 1, km: 2.8 }, place: "Gare de Namur" },
+        { agent: "Emma",    teamId: "cr5", type: "voice", duration: "0:22", chips: { flyers: 105, conversations: 9 }, place: "Gare Centrale" },
+        { agent: "Théo",    teamId: "cr1", type: "voice", duration: "0:19", chips: { transported: 3, km: 4.6 }, place: "Citadelle de Namur" },
+        { agent: "Noa",     teamId: "cr4", type: "photo", photoLabel: "File au stand du piétonnier" },
+        { agent: "Lina",    teamId: "cr1", type: "voice", duration: "0:27", chips: { transported: 2, km: 3.5 }, place: "Namur centre", quote: "Un donneur revenu pour la 2e fois cette semaine !" }
       ]
     },
 
@@ -119,7 +127,15 @@ const YUBA_DATA = {
         { agent: "Zoé",   teamId: "vw3", type: "voice", duration: "0:17", chips: { qrScans: 6 }, place: "Grand-Place de Mons" },
         { agent: "Manon", teamId: "vw2", type: "voice", duration: "0:27", chips: { screenHours: 1.4, km: 8.9 }, place: "Médiacité", quote: "Batterie changée, on repart pour la boucle de l’après-midi." },
         { agent: "Mehdi", teamId: "vw4", type: "photo", photoLabel: "Remorque LED aux Guillemins" },
-        { agent: "Louis", teamId: "vw1", type: "voice", duration: "0:24", chips: { screenHours: 1.6, km: 10.2 }, place: "Citadelle de Namur" }
+        { agent: "Louis", teamId: "vw1", type: "voice", duration: "0:24", chips: { screenHours: 1.6, km: 10.2 }, place: "Citadelle de Namur" },
+        { agent: "Zoé",   teamId: "vw3", type: "voice", duration: "0:20", chips: { qrScans: 5 }, place: "Grand-Place de Mons" },
+        { agent: "Louis", teamId: "vw1", type: "voice", duration: "0:23", chips: { screenHours: 1.3, km: 8.1 }, place: "Namur centre", quote: "Plein de touristes devant la Citadelle." },
+        { agent: "Manon", teamId: "vw2", type: "voice", duration: "0:16", chips: { screenHours: 1.1, km: 6.7 }, place: "Médiacité" },
+        { agent: "Mehdi", teamId: "vw4", type: "voice", duration: "0:21", chips: { qrScans: 8 }, place: "Guillemins" },
+        { agent: "Ilyes", teamId: "vw2", type: "voice", duration: "0:19", chips: { screenHours: 1.5, km: 9.3 }, place: "Boulevard de la Sauvenière" },
+        { agent: "Zoé",   teamId: "vw3", type: "photo", photoLabel: "Screenbike au marché de Mons" },
+        { agent: "Louis", teamId: "vw1", type: "voice", duration: "0:18", chips: { qrScans: 6 }, place: "Place d’Armes" },
+        { agent: "Manon", teamId: "vw2", type: "voice", duration: "0:24", chips: { screenHours: 1.7, km: 10.4 }, place: "Liège centre" }
       ]
     },
 
@@ -170,7 +186,15 @@ const YUBA_DATA = {
         { agent: "Inès",    teamId: "qk2", type: "voice", duration: "0:19", chips: { coupons: 73, conversations: 8 }, place: "Gare de Mons" },
         { agent: "Adam",    teamId: "qk1", type: "voice", duration: "0:24", chips: { coupons: 88, conversations: 19 }, place: "Grand-Place", quote: "Deuxième jour et toujours la file devant le restaurant !" },
         { agent: "Lucas",   teamId: "qk3", type: "photo", photoLabel: "Screenbag en action aux Grands Prés" },
-        { agent: "Chloé",   teamId: "qk1", type: "voice", duration: "0:17", chips: { coupons: 41, chalkTags: 2 }, place: "Grand-Place" }
+        { agent: "Chloé",   teamId: "qk1", type: "voice", duration: "0:17", chips: { coupons: 41, chalkTags: 2 }, place: "Grand-Place" },
+        { agent: "Adam",    teamId: "qk1", type: "voice", duration: "0:17", chips: { coupons: 76, conversations: 11 }, place: "Grand-Place" },
+        { agent: "Inès",    teamId: "qk2", type: "voice", duration: "0:23", chips: { coupons: 81, conversations: 14 }, place: "Gare de Mons", quote: "Les étudiants adorent le bon -50 %." },
+        { agent: "Yasmine", teamId: "qk3", type: "voice", duration: "0:19", chips: { coupons: 64, conversations: 9 }, place: "Les Grands Prés" },
+        { agent: "Tom",     teamId: "qk4", type: "voice", duration: "0:21", chips: { coupons: 59, conversations: 7 }, place: "Rue de Nimy" },
+        { agent: "Chloé",   teamId: "qk1", type: "voice", duration: "0:18", chips: { chalkTags: 2 }, place: "Place du Parc" },
+        { agent: "Nathan",  teamId: "qk2", type: "photo", photoLabel: "Screenbag devant la gare" },
+        { agent: "Lucas",   teamId: "qk3", type: "voice", duration: "0:22", chips: { coupons: 97, conversations: 16 }, place: "Les Grands Prés" },
+        { agent: "Elif",    teamId: "qk4", type: "voice", duration: "0:16", chips: { coupons: 48, conversations: 6 }, place: "Rue de Nimy" }
       ]
     }
   },
