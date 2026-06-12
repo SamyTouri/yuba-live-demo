@@ -776,15 +776,15 @@
   /* ---------- battement unique ----------
      UNE seule horloge visible : à chaque battement, un vocal arrive ET
      l'ensemble des données bouge en même temps (compteurs, graphes, donut,
-     carte, story, progression). Cadence : 3 s pendant la minute de show,
-     5 s la deuxième minute, 7 s en croisière. */
+     carte, story, progression). Cadence : 5 s pendant la minute de show,
+     7 s la deuxième minute, 10 s en croisière. */
 
   function beatDelay() {
     if (!firstFeedDone) return 1500;                 // premier battement quasi immédiat
     const elapsed = Date.now() - bootTime;
-    if (elapsed < SHOW_MS) return 3000;              // minute 1 : toutes les 3 s
-    if (elapsed < SHOW_MS * 2) return 5000;          // minute 2 : toutes les 5 s
-    return 7000;                                     // ensuite : toutes les 7 s
+    if (elapsed < SHOW_MS) return 5000;              // minute 1 : toutes les 5 s
+    if (elapsed < SHOW_MS * 2) return 7000;          // minute 2 : toutes les 7 s
+    return 10000;                                    // ensuite : toutes les 10 s
   }
 
   function scheduleBeat() {
